@@ -3,21 +3,24 @@ import { VikToken } from "../../typechain-types";
 import { log } from "console";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { assert, expect } from "chai";
+import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("Vik token unit test", () => {
-  const INITIAL_SUPPLY = 10000;
+  const INITIAL_SUPPLY = BigInt(10 ** 18);
   let vikTokenContract: VikToken;
   let vikTokenAddress: string;
-  async function deployVikToken() {
+  let signers: HardhatEthersSigner[];
+  async function setUp() {
     vikTokenContract = await ethers.deployContract("VikToken", [
       INITIAL_SUPPLY,
     ]);
     vikTokenAddress = await vikTokenContract.getAddress();
+    signers = await ethers.getSigners();
     log(`Vik token deployed at ${vikTokenAddress}`);
   }
 
   beforeEach(async () => {
-    await loadFixture(deployVikToken);
+    await loadFixture(setUp);
   });
 
   it("Deploys correctly", async () => {
@@ -28,9 +31,31 @@ describe("Vik token unit test", () => {
   it("Initializes contract correctly", async () => {
     const name = await vikTokenContract.name();
     const symbol = await vikTokenContract.symbol();
-    const totalSupply = await vikTokenContract.getInitialSupply();
+    const initialSupply = await vikTokenContract.getInitialSupply();
+    const totalSupply = await vikTokenContract.totalSupply();
     expect(name).to.equal("VikToken");
     expect(symbol).to.equal("VIK");
+    expect(initialSupply).to.equal(INITIAL_SUPPLY);
     expect(totalSupply).to.equal(INITIAL_SUPPLY);
+    const balanceOfDeployer = await vikTokenContract.balanceOf(
+      signers[0].address
+    );
+    expect(balanceOfDeployer).to.equal(BigInt(INITIAL_SUPPLY));
+  });
+
+  it("Transfers correctly", async () => {
+    const amount = BigInt(10 ** 18);
+    const recipient = signers[1].address;
+    const sender = signers[0].address;
+    const balanceOfSenderBefore = await vikTokenContract.balanceOf(sender);
+    const balanceOfRecipientBefore = await vikTokenContract.balanceOf(
+      recipient
+    );
+    const trxResponse = await vikTokenContract.transfer(recipient, amount);
+    trxResponse.wait(1);
+    const balanceOfSenderAfter = await vikTokenContract.balanceOf(sender);
+    const balanceOfRecipientAfter = await vikTokenContract.balanceOf(recipient);
+    expect(balanceOfSenderAfter).to.equal(balanceOfSenderBefore - amount);
+    expect(balanceOfRecipientAfter).to.equal(balanceOfRecipientBefore + amount);
   });
 });
