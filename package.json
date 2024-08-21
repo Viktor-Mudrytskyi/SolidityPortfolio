@@ -1,0 +1,6 @@
+{
+  "name": "solidity-portfolio",
+  "devDependencies": {
+    "hardhat": "^2.22.8"
+  }
+}
