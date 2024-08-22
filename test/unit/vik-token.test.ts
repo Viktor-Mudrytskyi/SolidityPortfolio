@@ -52,10 +52,41 @@ describe("Vik token unit test", () => {
       recipient
     );
     const trxResponse = await vikTokenContract.transfer(recipient, amount);
-    trxResponse.wait(1);
+    await trxResponse.wait(1);
+    const events = await vikTokenContract.queryFilter(
+      vikTokenContract.filters.Transfer,
+      -1
+    );
+    const transferEvent = events[0];
+    expect(transferEvent.args[0] === sender).to.be.true;
+    expect(transferEvent.args[1] === recipient).to.be.true;
+    expect(transferEvent.args[2] === amount).to.be.true;
+
     const balanceOfSenderAfter = await vikTokenContract.balanceOf(sender);
     const balanceOfRecipientAfter = await vikTokenContract.balanceOf(recipient);
     expect(balanceOfSenderAfter).to.equal(balanceOfSenderBefore - amount);
     expect(balanceOfRecipientAfter).to.equal(balanceOfRecipientBefore + amount);
+  });
+
+  it("Approves correctly", async () => {
+    const owner = signers[0].address;
+    const spender = signers[1].address;
+    const spenderAllowance = BigInt(10 ** 10);
+
+    const trxResponse = await vikTokenContract.approve(
+      spender,
+      spenderAllowance
+    );
+    await trxResponse.wait(1);
+    const events = await vikTokenContract.queryFilter(
+      vikTokenContract.filters.Approval,
+      -1
+    );
+    const transferEvent = events[0];
+    expect(transferEvent.args[0] === owner).to.be.true;
+    expect(transferEvent.args[1] === spender).to.be.true;
+    expect(transferEvent.args[2] === spenderAllowance).to.be.true;
+    const allowance = await vikTokenContract.allowance(owner, spender);
+    expect(allowance).to.equal(spenderAllowance);
   });
 });

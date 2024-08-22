@@ -17,6 +17,7 @@ contract VikToken is ERC20 {
 
     uint256 private s_totalSupply;
     mapping(address => uint256) private s_balanceOf;
+    mapping(address => mapping(address => uint256)) private s_allowances;
 
     constructor(uint256 initialSupply) ERC20(NAME, SYMBOL) {
         i_initialSupply = initialSupply;
@@ -24,39 +25,65 @@ contract VikToken is ERC20 {
     }
 
     function transfer(
-        address to,
-        uint256 value
+        address _to,
+        uint256 _value
     ) public override returns (bool) {
         address from = msg.sender;
-        if (from == address(0)) {
-            revert ERC20InvalidSender(address(0));
-        }
-        if (to == address(0)) {
-            revert ERC20InvalidReceiver(address(0));
-        }
-        uint256 senderBalance = s_balanceOf[from];
-        if (senderBalance < value) {
-            revert ERC20InsufficientBalance(from, senderBalance, value);
-        }
-        unchecked {
-            // Overflow not possible: value <= senderBalance <= totalSupply.
-            s_balanceOf[from] = senderBalance - value;
-            s_balanceOf[to] = s_balanceOf[to] + value;
-        }
-        emit Transfer(from, to, value);
+        _transferToken(from, _to, _value);
+        emit Transfer(from, _to, _value);
         return true;
     }
 
-    function _mintToken(address to, uint256 amount) internal {
-        if (to == address(0)) {
-            revert ERC20InvalidReceiver(address(0));
-        }
-        s_totalSupply += amount;
-        s_balanceOf[to] = s_balanceOf[to] + amount;
+    function approve(
+        address _spender,
+        uint256 _value
+    ) public override returns (bool) {
+        s_allowances[msg.sender][_spender] = _value;
+        emit Approval(msg.sender, _spender, _value);
+        return true;
     }
 
-    function balanceOf(address account) public view override returns (uint256) {
-        return s_balanceOf[account];
+    function _transferToken(
+        address _from,
+        address _to,
+        uint256 _value
+    ) internal {
+        if (_from == address(0)) {
+            revert ERC20InvalidSender(address(0));
+        }
+        if (_to == address(0)) {
+            revert ERC20InvalidReceiver(address(0));
+        }
+        uint256 senderBalance = s_balanceOf[_from];
+        if (senderBalance < _value) {
+            revert ERC20InsufficientBalance(_from, senderBalance, _value);
+        }
+        unchecked {
+            // Overflow not possible: value <= senderBalance <= totalSupply.
+            s_balanceOf[_from] = senderBalance - _value;
+            s_balanceOf[_to] = s_balanceOf[_to] + _value;
+        }
+    }
+
+    function _mintToken(address _to, uint256 _amount) internal {
+        if (_to == address(0)) {
+            revert ERC20InvalidReceiver(address(0));
+        }
+        s_totalSupply += _amount;
+        s_balanceOf[_to] = s_balanceOf[_to] + _amount;
+    }
+
+    function allowance(
+        address _owner,
+        address _spender
+    ) public view override returns (uint256) {
+        return s_allowances[_owner][_spender];
+    }
+
+    function balanceOf(
+        address _account
+    ) public view override returns (uint256) {
+        return s_balanceOf[_account];
     }
 
     function totalSupply() public view override returns (uint256) {
