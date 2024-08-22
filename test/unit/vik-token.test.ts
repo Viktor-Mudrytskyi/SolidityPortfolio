@@ -97,6 +97,13 @@ describe("Vik token unit test", () => {
         "ERC20InsufficientBalance"
       );
     });
+
+    it("Revrts if from address(0)", async () => {
+      const amount = BigInt(10 ** 18);
+      await expect(
+        vikTokenContract.transfer(ethers.ZeroAddress, amount)
+      ).to.revertedWithCustomError(vikTokenContract, "ERC20InvalidReceiver");
+    });
   });
 
   it("Approves correctly and emits Approve", async () => {
@@ -207,6 +214,34 @@ describe("Vik token unit test", () => {
         vikTokenContract,
         "ERC20InsufficientAllowance"
       );
+    });
+
+    it("Reverts if transfer from address(0)", async () => {
+      const allowenceAmount = BigInt(10 ** 10);
+      const amountToTransfer = BigInt(10 ** 8);
+
+      const sender = ethers.ZeroAddress;
+      const addressThatTransfersFromSender = signers[1].address;
+      const recipient = signers[2].address;
+
+      vikTokenContract = vikTokenContract.connect(signers[1]);
+
+      const approveResponse = await vikTokenContract.approve(
+        sender,
+        allowenceAmount
+      );
+      await approveResponse.wait(1);
+
+      const allowanceResponse = await vikTokenContract.allowance(
+        addressThatTransfersFromSender,
+        sender
+      );
+
+      expect(allowanceResponse).to.equal(allowenceAmount);
+
+      await expect(
+        vikTokenContract.transferFrom(sender, recipient, amountToTransfer)
+      ).to.revertedWithCustomError(vikTokenContract, "ERC20InvalidSender");
     });
   });
 });
