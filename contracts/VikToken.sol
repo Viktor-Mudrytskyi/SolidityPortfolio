@@ -1,16 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-// TODO
-// name VikToken
-// symbol VIK
-// decimals 18 (is also default in Zeppelin) ERC20
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // @dev
-// Implementation of the ERC20 abstract contract.
-contract VikToken is ERC20 {
+// Implementation of the IERC20 interface.
+contract VikToken is IERC20 {
     string private constant NAME = "VikToken";
     string private constant SYMBOL = "VIK";
     uint256 private immutable i_initialSupply;
@@ -19,7 +14,16 @@ contract VikToken is ERC20 {
     mapping(address => uint256) private s_balanceOf;
     mapping(address => mapping(address => uint256)) private s_allowances;
 
-    constructor(uint256 initialSupply) ERC20(NAME, SYMBOL) {
+    error ERC20InvalidReceiver(address);
+    error ERC20InvalidSender(address);
+    error ERC20InsufficientBalance(address, uint256, uint256);
+    error ERC20InsufficientAllowance(
+        address spender,
+        uint256 allowance,
+        uint256 needed
+    );
+
+    constructor(uint256 initialSupply) {
         i_initialSupply = initialSupply;
         _mintToken(msg.sender, i_initialSupply);
     }
@@ -31,6 +35,25 @@ contract VikToken is ERC20 {
         address from = msg.sender;
         _transferToken(from, _to, _value);
         emit Transfer(from, _to, _value);
+        return true;
+    }
+
+    function transferFrom(
+        address _from,
+        address _to,
+        uint256 _value
+    ) external returns (bool) {
+        uint256 currentAllowance = allowance(msg.sender, _from);
+        if (currentAllowance < _value) {
+            revert ERC20InsufficientAllowance(
+                msg.sender,
+                currentAllowance,
+                _value
+            );
+        }
+        s_allowances[msg.sender][_from] = currentAllowance - _value;
+        _transferToken(_from, _to, _value);
+        emit Transfer(_from, _to, _value);
         return true;
     }
 
@@ -92,5 +115,13 @@ contract VikToken is ERC20 {
 
     function getInitialSupply() public view returns (uint256) {
         return i_initialSupply;
+    }
+
+    function name() public view virtual returns (string memory) {
+        return NAME;
+    }
+
+    function symbol() public view virtual returns (string memory) {
+        return SYMBOL;
     }
 }
