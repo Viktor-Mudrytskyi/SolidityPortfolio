@@ -22,6 +22,7 @@ contract VikToken is IERC20 {
         uint256 allowance,
         uint256 needed
     );
+    error ERC20UnsafeApprove(address owner, address spender, uint256 value);
 
     constructor(uint256 initialSupply) {
         i_initialSupply = initialSupply;
@@ -61,6 +62,13 @@ contract VikToken is IERC20 {
         address _spender,
         uint256 _value
     ) public override returns (bool) {
+        //  To change the approve amount you first have to reduce the addresses`
+        //  allowance to zero by calling approve(_spender, 0) if it is not
+        //  already 0 to mitigate the race condition described here:
+        //  https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+        if (s_allowances[msg.sender][_spender] != 0 && _value != 0) {
+            revert ERC20UnsafeApprove(msg.sender, _spender, _value);
+        }
         s_allowances[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
         return true;

@@ -244,4 +244,49 @@ describe("Vik token unit test", () => {
       ).to.revertedWithCustomError(vikTokenContract, "ERC20InvalidSender");
     });
   });
+
+  describe("Attack tests", async () => {
+    it("Approve race attack https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729", async () => {
+      const allowenceAmount = BigInt(10 ** 10);
+      const amountToTransfer = BigInt(10 ** 8);
+      const sender = signers[0].address;
+      const addressThatTransfersFromSender = signers[1].address;
+      const recipient = signers[2].address;
+
+      vikTokenContract = vikTokenContract.connect(signers[1]);
+      const approveResponse = await vikTokenContract.approve(
+        sender,
+        allowenceAmount
+      );
+      await approveResponse.wait(1);
+
+      const transferFromResponse = await vikTokenContract.transferFrom(
+        sender,
+        recipient,
+        amountToTransfer
+      );
+
+      await transferFromResponse.wait(1);
+
+      await expect(
+        vikTokenContract.approve(sender, allowenceAmount)
+      ).to.revertedWithCustomError(vikTokenContract, "ERC20UnsafeApprove");
+
+      const transferFromResponse3 = await vikTokenContract.transferFrom(
+        sender,
+        recipient,
+        allowenceAmount - amountToTransfer
+      );
+
+      await transferFromResponse3.wait(1);
+
+      const approveResponse2 = await vikTokenContract.approve(
+        sender,
+        allowenceAmount
+      );
+
+      await approveResponse2.wait(1);
+      await approveResponse.wait(1);
+    });
+  });
 });

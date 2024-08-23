@@ -33,7 +33,7 @@ const config: HardhatUserConfig = {
     timeout: 4000000,
   },
   gasReporter: {
-    enabled: true,
+    enabled: false,
     currency: "USD",
     coinmarketcap: coinmarketCapApiKey,
     gasPriceApi: ethSepoliaGasPriceApi, // ETH Sepolia gas price
