@@ -13,7 +13,7 @@ contract MerkleTree {
 
     constructor() {
         for (uint256 index = 0; index < transactions.length; index++) {
-            hashes.push(keccak256(abi.encodePacked(transactions[index])));
+            hashes.push(keccak256(abi.encode(transactions[index])));
         }
 
         uint256 count = transactions.length;
@@ -23,10 +23,7 @@ contract MerkleTree {
             for (uint256 i = 0; i < count - 1; i += 2) {
                 hashes.push(
                     keccak256(
-                        abi.encodePacked(
-                            hashes[offset + i],
-                            hashes[offset + i + 1]
-                        )
+                        abi.encode(hashes[offset + i], hashes[offset + i + 1])
                     )
                 );
             }
@@ -42,13 +39,13 @@ contract MerkleTree {
         bytes32 _root,
         bytes32[] memory _proof
     ) public pure returns (bool) {
-        bytes32 hash = keccak256(abi.encodePacked(_transaction));
+        bytes32 hash = keccak256(abi.encode(_transaction));
         for (uint256 i = 0; i < _proof.length; i++) {
             bytes32 element = _proof[i];
             if (_index % 2 == 0) {
-                hash = keccak256(abi.encodePacked(hash, element));
+                hash = keccak256(abi.encode(hash, element));
             } else {
-                hash = keccak256(abi.encodePacked(element, hash));
+                hash = keccak256(abi.encode(element, hash));
             }
             _index /= 2;
         }
