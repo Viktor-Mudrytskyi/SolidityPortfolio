@@ -5,8 +5,7 @@ import {
   ReentranceProofAuction,
 } from "../../typechain-types";
 import { log } from "console";
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { assert, expect } from "chai";
+import { expect } from "chai";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 describe("Reentrance attack test", () => {
@@ -79,7 +78,7 @@ describe("Reentrance proof attack test", () => {
   let bidder2: HardhatEthersSigner;
   let attacker: HardhatEthersSigner;
   let deployer: HardhatEthersSigner;
-  let auctionContract: ReentranceAuction;
+  let auctionContract: ReentranceProofAuction;
   let attackContract: ReentranceAttack;
 
   let addressAuction: string;
@@ -119,22 +118,6 @@ describe("Reentrance proof attack test", () => {
 
     await trx3.wait(1);
 
-    log(
-      "Auction balance before attack",
-      await ethers.provider.getBalance(addressAuction)
-    );
-    log("Attacker balance", await ethers.provider.getBalance(addressAttack));
-    const trx4 = await attack.attack();
-
-    await trx4.wait(1);
-
-    log(
-      "Auction balance after attack",
-      await ethers.provider.getBalance(addressAuction)
-    );
-    log(
-      "Attacker contract balance",
-      await ethers.provider.getBalance(addressAttack)
-    );
+    await expect(attack.attack()).to.be.reverted;
   });
 });

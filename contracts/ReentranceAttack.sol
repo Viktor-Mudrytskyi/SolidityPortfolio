@@ -57,18 +57,27 @@ contract ReentranceProofAuction {
 
     mapping(address => uint256) public bidders;
 
+    bool locked = false;
+    modifier reentraceProof() {
+        require(!locked, "Reentrance attack");
+        locked = true;
+        _;
+        locked = false;
+    }
+
     function bid() public payable {
         require(msg.value >= MIN_BID_AMOUNT, "Not enough funds");
         bidders[msg.sender] += MIN_BID_AMOUNT;
     }
 
-    function refund() public payable {
+    function refund() public payable reentraceProof {
+        // There is implementation in openzeppelin
         uint256 amountToRefund = bidders[msg.sender];
         if (amountToRefund > 0) {
             // Change balance BEFORE transfer
-            bidders[msg.sender] = 0;
             (bool success, ) = msg.sender.call{value: amountToRefund}("");
             require(success, "Transfer failed");
+            bidders[msg.sender] = 0;
         }
     }
 
