@@ -14,8 +14,7 @@ import {
   polygonCardonaNetwork,
 } from "./config/networks";
 
-const { etherscanApiKey, coinmarketCapApiKey, ethSepoliaGasApi, privateKey } =
-  getEnvConfig();
+const { etherscanApiKey, coinmarketCapApiKey, privateKey } = getEnvConfig();
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -54,7 +53,7 @@ const config: HardhatUserConfig = {
     enabled: false,
     currency: "USD",
     coinmarketcap: coinmarketCapApiKey,
-    gasPriceApi: ethSepoliaGasApi, // ETH Sepolia gas price
+    gasPriceApi: ethSepoliaNetwork.gasPriceApi, // ETH Sepolia gas price
   },
   etherscan: {
     apiKey: etherscanApiKey,
