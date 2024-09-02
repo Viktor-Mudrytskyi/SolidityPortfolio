@@ -13,6 +13,7 @@ import {
   localhostNetwork,
   polygonCardonaNetwork,
 } from "./config/networks";
+import "@openzeppelin/hardhat-upgrades";
 
 const { etherscanApiKey, coinmarketCapApiKey, privateKey } = getEnvConfig();
 
