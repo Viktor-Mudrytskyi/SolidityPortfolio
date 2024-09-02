@@ -94,7 +94,7 @@ contract ERC721 is IERC721Metadata, ERC165 {
 
     function supportsInterface(
         bytes4 interfaceId
-    ) external pure returns (bool) {
+    ) external pure override returns (bool) {
         return interfaceId == type(IERC721).interfaceId;
     }
 
