@@ -15,7 +15,6 @@ contract Crowdfunding is ReentrancyGuard {
         string projectName;
         string projectDescription;
         uint256 projectFundingGoal;
-        ProjectStatus projectStatus;
     }
 
     enum ProjectStatus {
@@ -35,6 +34,11 @@ contract Crowdfunding is ReentrancyGuard {
         uint256 indexed amount
     );
 
+    event ProjectSucceeded(
+        bytes32 indexed projectId,
+        uint256 indexed fundingGoal
+    );
+
     error CreationInvalidData();
     error ProjectAlreadyExists(bytes32 uid);
     error ProjectDoesntExist(bytes32 uid);
@@ -43,6 +47,7 @@ contract Crowdfunding is ReentrancyGuard {
 
     Project[] public allProjects;
     mapping(bytes32 => Project) public allProjectsMap;
+    mapping(bytes32 => ProjectStatus) public projectStatusMap;
     mapping(bytes32 => mapping(address => uint256)) public contributorsMap;
     mapping(bytes32 => uint256) public fundingMap;
 
@@ -70,11 +75,11 @@ contract Crowdfunding is ReentrancyGuard {
             msg.sender,
             _name,
             _description,
-            _fundingGoal,
-            ProjectStatus.Active
+            _fundingGoal
         );
 
         allProjectsMap[projectId] = project;
+        projectStatusMap[projectId] = ProjectStatus.Active;
         allProjects.push(project);
 
         emit ProjectCreated(projectId, msg.sender);
@@ -85,7 +90,7 @@ contract Crowdfunding is ReentrancyGuard {
             revert ProjectDoesntExist(_projectId);
         }
 
-        Project memory project = allProjectsMap[_projectId];
+        Project storage project = allProjectsMap[_projectId];
 
         unchecked {
             int256 sendValue = int256(msg.value);
@@ -101,6 +106,8 @@ contract Crowdfunding is ReentrancyGuard {
                 if (!success) {
                     revert TransferFailed(msg.sender);
                 }
+                projectStatusMap[_projectId] = ProjectStatus.Succeeded;
+                emit ProjectSucceeded(_projectId, project.projectFundingGoal);
             }
 
             contributorsMap[_projectId][msg.sender] += uint256(sendValue);

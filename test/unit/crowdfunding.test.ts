@@ -56,7 +56,9 @@ describe("Crowdfunding unit test", () => {
               expect(project.projectDescription).to.equal(description);
               expect(project.projectFundingGoal).to.equal(oneEth);
               expect(project.uid).to.equal(projectId);
-              expect(project.projectStatus).to.equal(0);
+              expect(
+                await crowdFundingConnectedCreator.projectStatusMap(projectId)
+              ).to.equal(0);
               resolve(projectId);
             } catch (e) {
               reject(e);
@@ -250,6 +252,59 @@ describe("Crowdfunding unit test", () => {
       )
         .to.be.revertedWithCustomError(crowdFunding, "ProjectDoesntExist")
         .withArgs(fakeProjectId);
+    });
+
+    it("After successful funding, project's state is Succeeded and corresponding event is emitted", async () => {
+      const { crowdFunding, user1 } = await loadFixture(deploy);
+
+      await new Promise(async (resolve, reject) => {
+        try {
+          crowdFunding.on(crowdFunding.filters.ProjectSucceeded, async () => {
+            try {
+              const events = await crowdFunding.queryFilter(
+                crowdFunding.filters.ProjectSucceeded,
+                -1
+              );
+
+              const projectId = events[events.length - 1].args[0];
+              const fundingGoal = events[events.length - 1].args[1];
+
+              const projectById = await crowdFunding.allProjectsMap(projectId);
+
+              expect(projectId).to.equal(project1Id);
+              expect(fundingGoal).to.equal(projectById.projectFundingGoal);
+
+              expect(await crowdFunding.projectStatusMap(projectId)).to.equal(
+                1
+              );
+
+              resolve("");
+            } catch (e) {
+              reject(e);
+            }
+          });
+
+          const project1Id = await createProject(
+            user1,
+            crowdFunding,
+            "test1",
+            "desc1",
+            oneEth
+          );
+
+          const user1CrowdFunding = crowdFunding.connect(user1);
+          const contributePr1Resp = await user1CrowdFunding.contribute(
+            project1Id,
+            {
+              value: oneEth + oneEth,
+            }
+          );
+
+          await contributePr1Resp.wait(1);
+        } catch (e) {
+          reject(e);
+        }
+      });
     });
   });
 });
